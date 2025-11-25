@@ -1,14 +1,13 @@
-import os
-#flask request, redirect, session, url_for is not used, maybe needed later
-from flask import Flask, request, jsonify, redirect, session, url_for, g
-from flask_cors import CORS
-from dotenv import load_dotenv
-import requests
-import sqlite3
-import bcrypt
-from email_validator import validate_email, EmailNotValidError
-import requests
-
+import os #für pfade und weiters
+from flask import Flask, request, jsonify, g #Flask für API
+from flask_cors import CORS #Cross Origin Ressource sharing
+from dotenv import load_dotenv #.env variable
+import sqlite3 #datenbank
+import bcrypt #zum hashen des userpasswordes für die datenbank
+from email_validator import validate_email, EmailNotValidError #zum checken und clearen der Email
+import jwt #für jwt tokens (Json Web Token)
+import datetime #für gultigkeitsdauer des JWT
+from functools import wraps #für decorator
 
 #Diese Bibliothek wird für OAuth2 gebraucht
 from requests_oauthlib import oauth2_session
@@ -54,6 +53,35 @@ def init_db():
 if not os.path.exists(DB_PATH):
     init_db()
 
+#----------------Decorator------------------  
+
+#Decorator Methode, die es erlaubt einen endpoint so zu verändern, dass er ein gültiges JWT token braucht
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if('Authorization' in request.headers):
+            auth_header = request.headers['Authorization']
+            try:
+                #geht davon aus, dass das Jwt token so im Header der Request gesendet wird: Bearer ikjadlkjdlkfdjfksdjf
+                token = auth_header.split(" ")[1]
+            except IndexError:
+                return jsonify(error="Token is missing or invalid format"), 401
+        if(not token):
+            return jsonify(error="Token is missing"), 401
+        
+        #Übergebenen Token decodieren / validieren
+        try:
+            secret_key = os.environ.get("JWT_SECRET")
+            data = jwt.decode(token, secret_key, algorithms="HS256")
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Invalid token!'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated
+
 #----------------API Endpoints------------------  
 
 #Enpoint für User Login in Unsere Seite, bei erfolgreichem Login wird an Soundcloud Login weitergeleitet
@@ -74,15 +102,16 @@ def login():
     if(user_Exists(cleaned_email)):
         #Login
         if(checkPassword(raw_password, getUserPass(cleaned_email))):
-            return jsonify(message="Successfully Logged In"), 200
+            jwt_token = createJwt(cleaned_email)
+            return jsonify(token=jwt_token), 200
     else:
         #Create user
         response = createUser(cleaned_email, raw_password)
         if(response[1] != 200):
             return jsonify(error="Failed to create User"), 400
-        #After successfully creating User we just return 200, our log in currently only checks if a user exists, there's no
-        #real jwt token passed back or anything
-        return jsonify(message="Successfully created new User and Logged in"), 200
+        
+        jwt_token = createJwt(cleaned_email)
+        return jsonify(token=jwt_token), 200
         
 
 #Endpoint den Soundcloud verwendet um zu Antworten
@@ -90,10 +119,11 @@ def login():
 def callback():
     pass
 
-#Endpoint der vom Frontend verwendet wird um Playlist anzufragen, macht einen Call an Soundcloud API um Playlist zu holen
-@app.route("/api/playlist")
-def playlist():
-    pass
+#Endpoint, der verwendet wird, um Wrapped Daten abzufragen, dafür muss der User eingelogt sein und ein JWT haben
+@app.route("/api/get-wrapped", methods = ['GET'])
+@token_required
+def get_wrapped():
+    return jsonify(message="erfolgrech get-wrapped gecallt!"), 200
 
 #----------------Utility------------------
 
@@ -164,6 +194,22 @@ def checkEmail(email):
         return cleaned_email
     except EmailNotValidError:
         return jsonify(error = "Invalid Email")
+
+#Methode um ein Jwt Token mit der userEmail zu erstellen
+def createJwt(email):
+
+    payload = {
+        'sub': email,
+        'exp': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=30))
+    }
+
+    secret_key = os.environ.get("JWT_SECRET")
+    
+    token = jwt.encode(payload,secret_key, algorithm='HS256')
+
+    return token
+
+
 
 #Main Methode
 if __name__ == "__main__":

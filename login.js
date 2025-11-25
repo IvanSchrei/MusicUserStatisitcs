@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
         formData = new FormData(loginForm);
 
         const data = Object.fromEntries(formData.entries());
-        console.log(data)
         
         handleLogin(data);
     })
@@ -24,6 +23,10 @@ async function handleLogin(data){
 
         if(response.ok){
             console.log("Erfolgreich eingeloggt!");
+            const responseData = await response.json();
+            const token = responseData.token.trim();
+            sessionStorage.setItem("jwt_token", token)
+            await new Promise(r => setTimeout(r, 5000));
             window.location.href = "content.html";
         }
         else{
