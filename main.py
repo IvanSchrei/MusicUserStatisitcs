@@ -44,7 +44,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             uid INTEGER PRIMARY KEY AUTOINCREMENT,
             uemail TEXT NOT NULL UNIQUE,
-            upassword TEXT NOT NULL UNIQUE
+            upassword TEXT NOT NULL
         )
     ''')
     db.commit()
@@ -63,7 +63,7 @@ def token_required(f):
         if('Authorization' in request.headers):
             auth_header = request.headers['Authorization']
             try:
-                #geht davon aus, dass das Jwt token so im Header der Request gesendet wird: Bearer ikjadlkjdlkfdjfksdjf
+                #geht davon aus, dass das Jwt token so im Header der Request gesendet wird: "Bearer ikjadlkjdlkfdjfksdjf"
                 token = auth_header.split(" ")[1]
             except IndexError:
                 return jsonify(error="Token is missing or invalid format"), 401
@@ -84,6 +84,25 @@ def token_required(f):
 
 #----------------API Endpoints------------------  
 
+@app.route("/api/register", methods=['POST'])
+def register():
+    if not request.is_json:
+        return jsonify(error="Request must be JSON"), 415
+    
+    data = request.get_json()
+
+    email = data.get("email")
+    raw_password = data.get("password")
+
+    cleaned_email = checkEmail(email)
+    if(cleaned_email == None):
+        return jsonify(error="Incorrect Email Format"), 400
+    
+    response = createUser(cleaned_email, raw_password)
+    if(not response):
+        return jsonify(error = "Failed to create new User"), 400
+    return jsonify(message = "User created successfully"), 200
+
 #Enpoint für User Login in Unsere Seite, bei erfolgreichem Login wird an Soundcloud Login weitergeleitet
 @app.route("/api/login", methods=['POST'])
 def login():
@@ -96,23 +115,20 @@ def login():
     raw_password = data.get("password")
 
     cleaned_email = checkEmail(email)
-    if(isinstance(cleaned_email, dict) or isinstance(cleaned_email, list)):
+    if(cleaned_email == None):
         return jsonify(error="Incorrect Email Format"), 400
 
     if(user_Exists(cleaned_email)):
         #Login
-        if(checkPassword(raw_password, getUserPass(cleaned_email))):
+        userpass = getUserPass(cleaned_email)
+        if(userpass == None):
+            return jsonify(error="Error getting User Password from DB"), 400
+        if(checkPassword(raw_password, userpass)):
             jwt_token = createJwt(cleaned_email)
             return jsonify(token=jwt_token), 200
     else:
-        #Create user
-        response = createUser(cleaned_email, raw_password)
-        if(response[1] != 200):
-            return jsonify(error="Failed to create User"), 400
-        
-        jwt_token = createJwt(cleaned_email)
-        return jsonify(token=jwt_token), 200
-        
+        #User existiert nicht
+        return jsonify(error="User with this email doesn't exist, maybe try creating one if you haven't already"), 400
 
 #Endpoint den Soundcloud verwendet um zu Antworten
 @app.route("/api/callback")
@@ -123,6 +139,8 @@ def callback():
 @app.route("/api/get-wrapped", methods = ['GET'])
 @token_required
 def get_wrapped():
+    if not request.is_json:
+        return jsonify(error="Request is not JSON"), 400
     return jsonify(message="erfolgrech get-wrapped gecallt!"), 200
 
 #----------------Utility------------------
@@ -148,9 +166,9 @@ def createUser(email, password):
         query = 'INSERT INTO users(uemail, upassword) VALUES(?, ?)'
         c.execute(query, (email, hashed_password))
         db.commit()
-        return jsonify(message = "User created Successfully"), 200
+        return True
     except sqlite3.Error:
-        return jsonify(error = "Error creating User"), 400
+        return False
 
 #Methode, um Password des Benutzers zu hashen
 def hashPassword(password):
@@ -159,14 +177,14 @@ def hashPassword(password):
     salt = bcrypt.gensalt()
 
     hashed_password = bcrypt.hashpw(password_bytes, salt)
-
-    return hashed_password
+    hashed_password_string = hashed_password.decode('utf-8')
+    return hashed_password_string
 
 #Methode, die das übergebene Password mit dem übergebenen Password Hash vergleicht
 def checkPassword(given_pass, db_hash):
     password_bytes = given_pass.encode('utf-8')
-    print("db_hash: ", db_hash, " type: " , type(db_hash))
-    return bcrypt.checkpw(password_bytes, db_hash)
+    db_hash_bytes = db_hash.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, db_hash_bytes)
 
 #Methode, die das Password des Benutzers mit der übergebenen Email holt
 def getUserPass(email):
@@ -176,15 +194,12 @@ def getUserPass(email):
         query = "SELECT upassword FROM users WHERE uemail = ?"
         c.execute(query, (email, ))
         row = c.fetchone()
-        print("userPass from DB: ", row)
         if(row):
             return row['upassword']
         else:
-            print("error getting Users password from database")
-            return jsonify(error = "Couldn't find User Password in DB")
+            return None
     except sqlite3.Error as e:
-        print("error getting Users password from database 2: ", e)
-        return jsonify(error = "Error getting Users Password from DB")
+        return None
 
 #Methode, um Benutzereingabe zu überprüfen. Auch Strings bereinigen, um SQL-Injections zu vermeiden, true wenn alles richtig
 def checkEmail(email):
@@ -193,7 +208,7 @@ def checkEmail(email):
         cleaned_email = email_info.normalized
         return cleaned_email
     except EmailNotValidError:
-        return jsonify(error = "Invalid Email")
+        return None
 
 #Methode um ein Jwt Token mit der userEmail zu erstellen
 def createJwt(email):
@@ -208,8 +223,6 @@ def createJwt(email):
     token = jwt.encode(payload,secret_key, algorithm='HS256')
 
     return token
-
-
 
 #Main Methode
 if __name__ == "__main__":

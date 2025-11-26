@@ -1,4 +1,4 @@
-const registrierenButton = document.getElementById("registrierenButton");
+const registerButton = document.getElementById("registerButton");
 const loginForm = document.getElementById("loginForm")
 
 document.addEventListener("DOMContentLoaded", ()=>{
@@ -9,7 +9,10 @@ document.addEventListener("DOMContentLoaded", ()=>{
         const data = Object.fromEntries(formData.entries());
         
         handleLogin(data);
-    })
+    });
+    registerButton.addEventListener("click", ()=>{
+        window.location.href="register.html";
+    });
 });
 
 //Methode um Login des Users in unsere Webseite zu verwalten
@@ -31,6 +34,7 @@ async function handleLogin(data){
         }
         else{
             console.log("Login Fehlgeschlagen")
+            //Add output for user to tell him that it failed, might be because he is not registered
         }
     }
     catch(error){
