@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 //Axios setup
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:5000',
+    baseURL: 'https://musicuserstatisitcs.onrender.com',
     headers: {
         'Content-Type': 'application/json'
     }

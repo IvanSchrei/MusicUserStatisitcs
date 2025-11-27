@@ -1,13 +1,14 @@
 import os #für pfade und weiters
-from flask import Flask, request, jsonify, g #Flask für API
+from flask import Flask, request, jsonify, g, current_app #Flask für API
 from flask_cors import CORS #Cross Origin Ressource sharing
 from dotenv import load_dotenv #.env variable
-import sqlite3 #datenbank
 import bcrypt #zum hashen des userpasswordes für die datenbank
 from email_validator import validate_email, EmailNotValidError #zum checken und clearen der Email
 import jwt #für jwt tokens (Json Web Token)
 import datetime #für gultigkeitsdauer des JWT
 from functools import wraps #für decorator
+import psycopg2 #für Datenbank Connection (PostgreSQL auf Neon gehostet)
+from psycopg2.extras import RealDictCursor
 
 #Diese Bibliothek wird für OAuth2 gebraucht
 from requests_oauthlib import oauth2_session
@@ -17,6 +18,8 @@ load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 app = Flask("3Legged_OAuth2_Example")
 CORS(app)
 
@@ -25,8 +28,7 @@ CORS(app)
 #Methode, um Datenbank verbindung zu holen
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
+        g.db = psycopg2.connect(DATABASE_URL, sslmode='require')
     return g.db
 
 #Methode, um Datenbank verbindung zu schließen
@@ -38,11 +40,11 @@ def close_db(exception):
 
 #Methode, um Datenbank zu erstellen
 def init_db():
-    db = sqlite3.connect(DB_PATH)
-    c = db.cursor()
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            uid INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid SERIAL PRIMARY KEY,
             uemail TEXT NOT NULL UNIQUE,
             upassword TEXT NOT NULL,
             uoauth_access_token TEXT,
@@ -50,11 +52,11 @@ def init_db():
             uoauth_expires_at REAL
         )
     ''')
-    #REAL is the SQLite equivalent of FLOAT
-    db.commit()
-    db.close()
+    
+    conn.commit()
+    conn.close()
 
-if not os.path.exists(DB_PATH):
+with app.app_context():
     init_db()
 
 #----------------Decorator------------------  
@@ -162,10 +164,11 @@ def get_wrapped():
 def user_Exists(email):
     db = get_db()
     c = db.cursor()
-    query = 'SELECT uid FROM users WHERE uemail = ?'
+    query = 'SELECT uid FROM users WHERE uemail = %s'
     c.execute(query, (email, )) 
     row = c.fetchone()
-    if(row):
+    c.close()
+    if row:
         return True
     else:
         return False
@@ -176,12 +179,16 @@ def createUser(email, password):
     try:
         db = get_db()
         c = db.cursor()
-        query = 'INSERT INTO users(uemail, upassword) VALUES(?, ?)'
+        query = 'INSERT INTO users(uemail, upassword) VALUES(%s, %s)'
         c.execute(query, (email, hashed_password))
         db.commit()
+        c.close()
         return True
-    except sqlite3.Error:
+    except psycopg2.Error as e:
+        # Important: If an error occurs, you must rollback 
+        db.rollback()
         return False
+
 
 #Methode, um Password des Benutzers zu hashen
 def hashPassword(password):
@@ -203,15 +210,18 @@ def checkPassword(given_pass, db_hash):
 def getUserPass(email):
     try:
         db = get_db()
-        c = db.cursor()
-        query = "SELECT upassword FROM users WHERE uemail = ?"
+        c = db.cursor(cursor_factory=RealDictCursor)
+        
+        query = "SELECT upassword FROM users WHERE uemail = %s"
         c.execute(query, (email, ))
         row = c.fetchone()
-        if(row):
+        c.close()
+        
+        if row:
             return row['upassword']
         else:
             return None
-    except sqlite3.Error as e:
+    except psycopg2.Error:
         return None
 
 #Methode, um Benutzereingabe zu überprüfen. Auch Strings bereinigen, um SQL-Injections zu vermeiden, true wenn alles richtig
