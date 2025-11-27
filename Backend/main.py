@@ -44,9 +44,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             uid INTEGER PRIMARY KEY AUTOINCREMENT,
             uemail TEXT NOT NULL UNIQUE,
-            upassword TEXT NOT NULL
+            upassword TEXT NOT NULL,
+            uoauth_access_token TEXT,
+            uoauth_refresh_token TEXT,
+            uoauth_expires_at REAL
         )
     ''')
+    #REAL is the SQLite equivalent of FLOAT
     db.commit()
     db.close()
 
@@ -130,6 +134,15 @@ def login():
         #User existiert nicht
         return jsonify(error="User with this email doesn't exist, maybe try creating one if you haven't already"), 400
 
+#TODO
+#Enpoint um Spotify Link an Frontend zu senden
+@app.route("/api/spotify/link")
+@token_required
+def get_spotify_link(current_user):
+    client_id = 1 #what even is this id? my user id? or one for spotify? if so how do i get it?
+    redirect_uri = "http://127.0.0.1:5000/content.html"
+    spotify_session = oauth2_session(client_id, redirect_uri)
+
 #Endpoint den Soundcloud verwendet um zu Antworten
 @app.route("/api/callback")
 def callback():
@@ -139,8 +152,8 @@ def callback():
 @app.route("/api/get-wrapped", methods = ['GET'])
 @token_required
 def get_wrapped():
-    if not request.is_json:
-        return jsonify(error="Request is not JSON"), 400
+    if not request:
+        return jsonify(error="Request missing!?"), 400
     return jsonify(message="erfolgrech get-wrapped gecallt!"), 200
 
 #----------------Utility------------------

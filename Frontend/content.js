@@ -2,9 +2,9 @@ const spotifyConnectButton = document.getElementById("spotifyConnectButton")
 const wrapButton = document.getElementById("getWrappedButton")
 
 document.addEventListener("DOMContentLoaded", ()=>{
-    spotifyConnectButton.addEventListener('click', ()=>{
+    spotifyConnectButton.addEventListener('click', async ()=>{
         console.log("log into spotify");
-        //handleSpotifyLogin()
+        handleSpotifyLogin()
     });
     wrapButton.addEventListener('click', ()=>{
         console.log("get wrapped");
@@ -53,26 +53,25 @@ api.interceptors.response.use(
 //Methode, um Spotify Login über OAuth2 auszuführen
 async function handleSpotifyLogin(){
     try{
-        const response = await api.get('api/playlist', {
-
-        });
-
+        const response = await api.get('/api/spotify/link');
+        
         if(response.ok){
-            console.log("Erfolgreich Playlist geholt!");
-            
+            console.log("Erfolgreich Spotify Url geholt!");
+            window.location.href = response.data.url;
         }
         else{
-            console.log("Playlist konnte nicht geholt werden")
+            console.log("Spotify Url konnte nicht geholt werden")
         }
     }
     catch(error){
-        console.log("Error beim Holen der Playlist: ", error)
+        console.log("Error beim Holen der Spotify Url: ", error)
     }
 }
 
 async function getWrapped(){
     try{
         const response = await api.get('api/get-wrapped');
+        console.log("response: ", response)
         if(response){
             console.log("wrapped stats: ", response.data);
         }
