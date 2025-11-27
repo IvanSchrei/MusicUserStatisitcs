@@ -1,2 +1,4 @@
 # SpotifyWrappedRebuild
 My Rebuild of Spotify Wrapped using OAuth2 for a presentation on OAuth2 in school
+
+This is not an Offical Spotify Product i simply use their API. If you want to create something similar please go to the official Spotify Developers page and sign up. [https://developer.spotify.com/](https://developer.spotify.com/). Also please read through their Terms of Service
