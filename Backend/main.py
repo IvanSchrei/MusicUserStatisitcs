@@ -19,6 +19,8 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET")
 
 app = Flask("3Legged_OAuth2_Example")
 CORS(app)
@@ -141,9 +143,10 @@ def login():
 @app.route("/api/spotify/link")
 @token_required
 def get_spotify_link(current_user):
-    client_id = 1 #what even is this id? my user id? or one for spotify? if so how do i get it?
-    redirect_uri = "http://127.0.0.1:5000/content.html"
-    spotify_session = oauth2_session(client_id, redirect_uri)
+    redirect_uri = "remarkable-custard-0d3bbf.netlify.app/content.html"
+    spotify_session = oauth2_session(SPOTIFY_CLIENT_ID, redirect_uri, scope = ['user-top-read'])
+    authorization_url, state = spotify_session.authorization_url("https://accounts.spotify.com/authorize")
+    return jsonify(url = authorization_url), 200
 
 #Endpoint den Soundcloud verwendet um zu Antworten
 @app.route("/api/callback")
@@ -249,6 +252,4 @@ def createJwt(email):
 
 #Main Methode
 if __name__ == "__main__":
-    #HTTPS ist normalerweise verpflichtend bei OAuth2, mit dieser Zeile deaktivieren
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     app.run(debug=True)
