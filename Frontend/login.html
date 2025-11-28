@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyMusicWebsite Login</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div>
-        <h1>Login:</h1>
-        <form id = "loginForm">
-            <label for="email">Email:</label>
-            <input type="text" id="email" name="email" value="yourEmail@email.com">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" value="">
-            <input type="submit">
+    <div class="container">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <label for="email">Email</label>
+            <input type="text" id="email" name="email" value="" placeholder="yourEmail@email.com">
+            
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" value="" placeholder="********">
+            
+            <input type="submit" value="Log In">
         </form>
         <button id="registerButton">Stattdessen neuen Account anlegen</button>
     </div>
