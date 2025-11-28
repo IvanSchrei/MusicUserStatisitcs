@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
         handleLogin(data);
     });
     registerButton.addEventListener("click", ()=>{
-        window.location.href="register.html";
+        window.location.href="index.html";
     });
 });
 
@@ -29,7 +29,6 @@ async function handleLogin(data){
             const responseData = await response.json();
             const token = responseData.token.trim();
             sessionStorage.setItem("jwt_token", token)
-            await new Promise(r => setTimeout(r, 5000));
             window.location.href = "content.html";
         }
         else{

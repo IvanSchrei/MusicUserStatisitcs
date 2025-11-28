@@ -1,5 +1,6 @@
 const spotifyConnectButton = document.getElementById("spotifyConnectButton")
 const wrapButton = document.getElementById("getWrappedButton")
+const logOutButton = document.getElementById("logoutButton")
 
 document.addEventListener("DOMContentLoaded", ()=>{
     spotifyConnectButton.addEventListener('click', async ()=>{
@@ -9,6 +10,10 @@ document.addEventListener("DOMContentLoaded", ()=>{
     wrapButton.addEventListener('click', ()=>{
         console.log("get wrapped");
         getWrapped()
+    });
+    logOutButton.addEventListener('click', ()=>{
+        console.log("logging out")
+        logout();
     });
 });
 
@@ -44,8 +49,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if(error.response && error.response.status === 401){
-            sessionStorage.removeItem("jwt_token");
-            window.location.href = "login.html"
+            logout();
         }
     }
 )
@@ -82,4 +86,9 @@ async function getWrapped(){
     catch(error){
         console.error("Error beim holen von Wrapped: ", error)
     }
+}
+
+function logout(){
+    sessionStorage.removeItem("jwt_token");
+    window.location.href = "login.html"
 }

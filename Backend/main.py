@@ -40,7 +40,7 @@ def close_db(exception):
 
 #Methode, um Datenbank zu erstellen
 def init_db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    conn = psycopg2.connect(DATABASE_URL)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
