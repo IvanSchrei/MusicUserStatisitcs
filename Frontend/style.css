@@ -136,3 +136,45 @@ input[type="submit"]:hover,
     font-size: 1.2rem;
     padding: 15px;
 }
+
+.app-footer {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.app-footer > * {
+    pointer-events: auto;
+}
+
+.disclaimer {
+    font-size: 0.75rem;
+    color: #535353;
+}
+
+.github-link {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.github-link:hover {
+    transform: scale(1.1);
+}
+
+.github-icon {
+    width: 24px;
+    height: 24px;
+    fill: var(--text-muted);
+    transition: fill 0.2s;
+}
+
+.github-link:hover .github-icon {
+    fill: var(--text-main);
+}
