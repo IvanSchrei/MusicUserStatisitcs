@@ -63,6 +63,8 @@ with app.app_context():
 
 #----------------Decorator------------------  
 
+#TODO make it so current user is extracted and passed to wrapped function
+
 #Decorator Methode, die es erlaubt einen endpoint so zu verändern, dass er ein gültiges JWT token braucht
 def token_required(f):
     @wraps(f)
@@ -82,12 +84,15 @@ def token_required(f):
         try:
             secret_key = os.environ.get("JWT_SECRET")
             data = jwt.decode(token, secret_key, algorithms="HS256")
+            current_user_email = data.get("sub")
+            print("data: ", data)
+            print("current user: ", current_user_email)
         except jwt.ExpiredSignatureError:
             return jsonify({'message': 'Token has expired!'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'message': 'Invalid token!'}), 401
         
-        return f(*args, **kwargs)
+        return f(current_user=current_user_email, *args, **kwargs)
     return decorated
 
 #----------------API Endpoints------------------  
@@ -156,10 +161,10 @@ def callback():
 #Endpoint, der verwendet wird, um Wrapped Daten abzufragen, dafür muss der User eingelogt sein und ein JWT haben
 @app.route("/api/get-wrapped", methods = ['GET'])
 @token_required
-def get_wrapped():
+def get_wrapped(current_user):
     if not request:
         return jsonify(error="Request missing!?"), 400
-    return jsonify(message="erfolgrech get-wrapped gecallt!"), 200
+    return jsonify(message="erfolgrech get-wrapped gecallt!", user = current_user), 200
 
 #----------------Utility------------------
 
