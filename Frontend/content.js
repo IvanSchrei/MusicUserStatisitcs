@@ -59,7 +59,7 @@ async function handleSpotifyLogin(){
     try{
         const response = await api.get('/api/spotify/link');
         
-        if(response.ok){
+        if(response.status === 200){
             console.log("Erfolgreich Spotify Url geholt!");
             window.location.href = response.data.url;
         }
