@@ -11,7 +11,7 @@ import psycopg2 #für Datenbank Connection (PostgreSQL auf Neon gehostet)
 from psycopg2.extras import RealDictCursor
 
 #Diese Bibliothek wird für OAuth2 gebraucht
-from requests_oauthlib import oauth2_session
+from requests_oauthlib import OAuth2Session
 
 load_dotenv()
 
@@ -149,7 +149,7 @@ def login():
 @token_required
 def get_spotify_link(current_user):
     redirect_uri = "remarkable-custard-0d3bbf.netlify.app/content.html"
-    spotify_session = oauth2_session(SPOTIFY_CLIENT_ID, redirect_uri, scope = ['user-top-read'])
+    spotify_session = OAuth2Session(SPOTIFY_CLIENT_ID, redirect_uri, scope = ['user-top-read'])
     authorization_url, state = spotify_session.authorization_url("https://accounts.spotify.com/authorize")
     return jsonify(url = authorization_url), 200
 
