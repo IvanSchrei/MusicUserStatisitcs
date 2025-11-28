@@ -5,3 +5,4 @@ This is not an Offical Spotify Product i simply use their API. If you want to cr
 
 My Python Api hostet on Render: [https://musicuserstatisitcs.onrender.com](https://musicuserstatisitcs.onrender.com).
 Database: PostreSQL on Neon
+Website hosted using Netlify: [https://remarkable-custard-0d3bbf.netlify.app/](https://remarkable-custard-0d3bbf.netlify.app/)
