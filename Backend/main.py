@@ -367,7 +367,7 @@ def saveTokensToDB(user_email, token_data):
 def get_user_spotify_tokens(user_email):
     try:
         db = get_db()
-        c = db.cursor()
+        c = db.cursor(cursor_factory=RealDictCursor)
         query = """
             SELECT uoauth_access_token, uoauth_refresh_token, uoauth_expires_at 
             FROM users WHERE uemail = %s
