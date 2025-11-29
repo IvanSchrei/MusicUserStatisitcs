@@ -9,6 +9,7 @@ import datetime #für gultigkeitsdauer des JWT
 from functools import wraps #für decorator
 import psycopg2 #für Datenbank Connection (PostgreSQL auf Neon gehostet)
 from psycopg2.extras import RealDictCursor
+import time #zum überprüfen, ob spotify auth token noch gültig ist
 
 #Diese Bibliothek wird für OAuth2 gebraucht
 from requests_oauthlib import OAuth2Session
@@ -61,7 +62,7 @@ def init_db():
 with app.app_context():
     init_db()
 
-#----------------Decorator------------------  
+#----------------Decorators------------------  
 
 
 #Decorator Methode, die es erlaubt einen endpoint so zu verändern, dass er ein gültiges JWT token braucht
@@ -92,6 +93,56 @@ def token_required(f):
             return jsonify({'message': 'Invalid token!'}), 401
         
         return f(current_user=current_user_email, *args, **kwargs)
+    return decorated
+
+#Decorator, der dafür sorgt, dass Spotify token übergeben werden muss
+def spotify_client_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        current_user = kwargs.get('current_user')
+        if not current_user:
+            return jsonify(error="User context missing"), 401
+
+        token_info = get_user_spotify_tokens(current_user)
+        
+        if not token_info:
+            return jsonify(error="Spotify account not linked. Please authorize via /api/spotify/link first."), 403
+
+        #schaune ob token noch aktiv, 60 sekunden buffer
+        if time.time() > (token_info['expires_at'] - 60):
+            print(f"Token for {current_user} expired. Refreshing...")
+            
+            extra = {
+                'client_id': SPOTIFY_CLIENT_ID,
+                'client_secret': SPOTIFY_CLIENT_SECRET,
+            }
+
+            spotify = OAuth2Session(SPOTIFY_CLIENT_ID, token=token_info)
+            
+            try:
+                #Token refreshen
+                new_token = spotify.refresh_token(
+                    token_url="https://accounts.spotify.com/api/token",
+                    refresh_token=token_info['refresh_token'],
+                    **extra
+                )
+                
+                #neuen Token in DB speichern
+                if 'refresh_token' not in new_token:
+                    new_token['refresh_token'] = token_info['refresh_token']
+                
+                saveTokensToDB(current_user, new_token)
+
+                token_info = new_token
+                
+            except Exception as e:
+                print("Error refreshing token:", e)
+                return jsonify(error="External authorization expired. Please link Spotify again."), 401
+
+        spotify_client = OAuth2Session(SPOTIFY_CLIENT_ID, token=token_info)
+
+        return f(spotify_client=spotify_client, *args, **kwargs)
+
     return decorated
 
 #----------------API Endpoints------------------  
@@ -186,10 +237,19 @@ def callback(current_user):
 #Endpoint, der verwendet wird, um Wrapped Daten abzufragen, dafür muss der User eingelogt sein und ein JWT haben
 @app.route("/api/get-wrapped", methods = ['GET'])
 @token_required
-def get_wrapped(current_user):
-    if not request:
-        return jsonify(error="Request missing!?"), 400
-    return jsonify(message="erfolgrech get-wrapped gecallt!", user = current_user), 200
+@spotify_client_required
+def get_wrapped(current_user, spotify_client):
+    try:
+        response = spotify_client.get("https://api.spotify.com/v1/me/top/tracks?limit=5")
+        
+        if response.status_code != 200:
+            return jsonify(error="Failed to fetch data from Spotify", details=response.json()), response.status_code
+
+        data = response.json()
+        return jsonify(message="Success", data=data), 200
+        
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 #----------------Utility------------------
 
@@ -221,7 +281,6 @@ def createUser(email, password):
         # Important: If an error occurs, you must rollback 
         db.rollback()
         return False
-
 
 #Methode, um Password des Benutzers zu hashen
 def hashPassword(password):
@@ -304,6 +363,31 @@ def saveTokensToDB(user_email, token_data):
         db.rollback()
     finally:
         c.close()
+    
+def get_user_spotify_tokens(user_email):
+    try:
+        db = get_db()
+        c = db.cursor()
+        query = """
+            SELECT uoauth_access_token, uoauth_refresh_token, uoauth_expires_at 
+            FROM users WHERE uemail = %s
+        """
+        c.execute(query, (user_email, ))
+        row = c.fetchone()
+        c.close()
+
+        if not row or not row['uoauth_access_token']:
+            return None
+            
+        return {
+            'access_token': row['uoauth_access_token'],
+            'refresh_token': row['uoauth_refresh_token'],
+            'expires_at': row['uoauth_expires_at'],
+            'token_type': 'Bearer'
+        }
+    except psycopg2.Error as e:
+        print("DB Error:", e)
+        return None
 
 #Main Methode
 if __name__ == "__main__":
