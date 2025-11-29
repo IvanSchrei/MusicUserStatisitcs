@@ -3,18 +3,29 @@ const wrapButton = document.getElementById("getWrappedButton")
 const logOutButton = document.getElementById("logoutButton")
 
 document.addEventListener("DOMContentLoaded", ()=>{
-    spotifyConnectButton.addEventListener('click', async ()=>{
-        console.log("log into spotify");
-        handleSpotifyLogin()
-    });
-    wrapButton.addEventListener('click', ()=>{
-        console.log("get wrapped");
-        getWrapped()
-    });
-    logOutButton.addEventListener('click', ()=>{
-        console.log("logging out")
-        logout();
-    });
+    //on first load this should return an error, but after returning from spotify login it should send the code to backend
+    handleSpotifyCallback(); 
+
+    if(spotifyConnectButton){
+        spotifyConnectButton.addEventListener('click', async ()=>{
+            console.log("log into spotify");
+            handleSpotifyLogin()
+        });
+    }
+
+    if(wrapButton){
+        wrapButton.addEventListener('click', ()=>{
+            console.log("get wrapped");
+            getWrapped();
+        });
+    }
+
+    if(logOutButton){
+        logOutButton.addEventListener('click', ()=>{
+            console.log("logging out")
+            logout();
+        });
+    }
 });
 
 //Axios setup
@@ -90,5 +101,25 @@ async function getWrapped(){
 
 function logout(){
     sessionStorage.removeItem("jwt_token");
-    window.location.href = "login.html"
+    window.location.href = "login.html";
+}
+
+async function handleSpotifyCallback(){
+    const urlParams = new URLSearchParams(window.location.search);
+    const auth_code = urlParams.get('code');
+    if(code){
+        try{
+            const response = await api.post("https://musicuserstatisitcs.onrender.com/api/callback", {code: auth_code});
+            if(response.status == 200){
+                console.log("Callback code handled")
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            else{
+                console.log("Error handling callback code")
+            }
+        }
+        catch(error){
+            console.log("Network error: ", error)
+        }
+    }
 }
