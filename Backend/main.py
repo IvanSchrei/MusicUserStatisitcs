@@ -63,7 +63,6 @@ with app.app_context():
 
 #----------------Decorator------------------  
 
-#TODO make it so current user is extracted and passed to wrapped function
 
 #Decorator Methode, die es erlaubt einen endpoint so zu verändern, dass er ein gültiges JWT token braucht
 def token_required(f):
@@ -153,10 +152,36 @@ def get_spotify_link(current_user):
     authorization_url, state = spotify_session.authorization_url("https://accounts.spotify.com/authorize")
     return jsonify(url = authorization_url), 200
 
-#Endpoint den Soundcloud verwendet um zu Antworten
-@app.route("/api/callback")
-def callback():
-    pass
+#Endpoint um code aus dem Frontend, gegen Authtoken von Spotify auszutauschen
+@app.route("/api/callback", methods = ['POST'])
+@token_required
+def callback(current_user):
+    if not request.is_json:
+        return jsonify(error="Request must be JSON"), 415
+    
+    data = request.get_json()
+    code = data.get("code")
+
+    if not code:
+        return jsonify(error="No code provided"), 400
+    
+    redirect_uri = "https://remarkable-custard-0d3bbf.netlify.app/content.html"
+
+    spotify_session = OAuth2Session(SPOTIFY_CLIENT_ID, redirect_uri=redirect_uri)
+
+    try:
+        token_data = spotify_session.fetch_token(
+            token_url="https://accounts.spotify.com/api/token",
+            client_secret=SPOTIFY_CLIENT_SECRET,
+            code=code
+        )
+    except Exception as e:
+        return jsonify(error = "Failed to get Spotify's Auth token")
+    
+    saveTokensToDB(current_user, token_data)
+
+    return jsonify(message = "Spotify Auth token successfully saved to Backend.")
+
 
 #Endpoint, der verwendet wird, um Wrapped Daten abzufragen, dafür muss der User eingelogt sein und ein JWT haben
 @app.route("/api/get-wrapped", methods = ['GET'])
@@ -254,6 +279,31 @@ def createJwt(email):
     token = jwt.encode(payload,secret_key, algorithm='HS256')
 
     return token
+
+def saveTokensToDB(user_email, token_data):
+    db = get_db()
+    c = db.cursor()
+    access_token = token_data["access_token"]
+    refresh_token = token_data["refresh_token"]
+
+    expires_at = datetime.datetime.now().timestamp() + token_data.get('expires_in', 3600)
+
+    query = """
+        UPDATE users
+        SET uoauth_access_token = %s,
+            uoauth_refresh_token = %s,
+            uoauth_expires_at = %s
+        WHERE uemail = %s
+    """
+
+    try:
+        c.execute(query, (access_token, refresh_token, expires_at, user_email))
+        db.commit()
+    except Exception as e:
+        print("DB error saving spotify auth tokens: ", e)
+        db.rollback()
+    finally:
+        c.close()
 
 #Main Methode
 if __name__ == "__main__":
