@@ -107,7 +107,7 @@ function logout(){
 async function handleSpotifyCallback(){
     const urlParams = new URLSearchParams(window.location.search);
     const auth_code = urlParams.get('code');
-    if(code){
+    if(auth_code){
         try{
             const response = await api.post("https://musicuserstatisitcs.onrender.com/api/callback", {code: auth_code});
             if(response.status == 200){
