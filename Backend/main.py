@@ -343,20 +343,29 @@ def saveTokensToDB(user_email, token_data):
     db = get_db()
     c = db.cursor()
     access_token = token_data["access_token"]
-    refresh_token = token_data["refresh_token"]
+    refresh_token = token_data.get("refresh_token")
 
     expires_at = datetime.datetime.now().timestamp() + token_data.get('expires_in', 3600)
 
-    query = """
-        UPDATE users
-        SET uoauth_access_token = %s,
-            uoauth_refresh_token = %s,
-            uoauth_expires_at = %s
-        WHERE uemail = %s
-    """
-
     try:
-        c.execute(query, (access_token, refresh_token, expires_at, user_email))
+        if refresh_token:
+            query = """
+                UPDATE users
+                SET uoauth_access_token = %s,
+                    uoauth_refresh_token = %s,
+                    uoauth_expires_at = %s
+                WHERE uemail = %s
+            """
+            c.execute(query, (access_token, refresh_token, expires_at, user_email))
+        else:
+            query = """
+                UPDATE users
+                SET uoauth_access_token = %s,
+                    uoauth_expires_at = %s
+                WHERE uemail = %s
+            """
+            c.execute(query, (access_token, expires_at, user_email))
+            
         db.commit()
     except Exception as e:
         print("DB error saving spotify auth tokens: ", e)

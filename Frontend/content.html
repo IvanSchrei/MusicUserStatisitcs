@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MusicStatistics</title>
+    <title>MusicStatistics - Wrapped</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,10 +11,17 @@
 
     <div class="container">
         <h1>Spotify Wrapped Remake</h1>
-        <button id="spotifyConnectButton">Connect to Spotify</button>
-        <br><br>
-        <button id="getWrappedButton">Wrap</button>
+        
+        <div class="controls">
+            <button id="spotifyConnectButton">1. Link Spotify Account</button>
+            <button id="getWrappedButton">2. Get My Top 5 Songs</button>
+        </div>
+
+        <div id="status-message"></div>
+
+        <ul id="track-list" class="track-list"></ul>
     </div>
+
     <footer class="app-footer">
         <a href="https://github.com/IvanSchrei/MusicUserStatisitcs" target="_blank" class="github-link" aria-label="Visit GitHub Repository">
             <svg class="github-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

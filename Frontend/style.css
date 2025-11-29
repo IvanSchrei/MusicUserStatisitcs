@@ -24,7 +24,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 20px 20px 60px 20px; /* Added bottom padding for footer */
 }
 
 .container {
@@ -33,7 +33,7 @@ body {
     border-radius: var(--border-radius);
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     width: 100%;
-    max-width: 400px;
+    max-width: 500px; /* Slightly wider for song list */
     text-align: center;
 }
 
@@ -41,46 +41,11 @@ h1 {
     font-size: 1.8rem;
     margin-bottom: 1.5rem;
     font-weight: 700;
+    color: var(--primary-color);
 }
 
-form {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    margin-bottom: 1.5rem;
-}
-
-label {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    margin-bottom: 0.5rem;
-    margin-top: 1rem;
-}
-
-label:first-child {
-    margin-top: 0;
-}
-
-input[type="text"],
-input[type="password"] {
-    background-color: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--text-main);
-    padding: 12px;
-    border-radius: 4px;
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-input[type="text"]:focus,
-input[type="password"]:focus {
-    border-color: var(--primary-color);
-}
-
-input[type="submit"],
-#getWrappedButton,
-#spotifyConnectButton {
+/* Button Styles */
+button {
     background-color: var(--primary-color);
     color: #000;
     border: none;
@@ -89,41 +54,21 @@ input[type="submit"],
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
     width: 100%;
     transition: transform 0.1s, background-color 0.2s;
 }
 
-input[type="submit"]:hover,
-#getWrappedButton:hover,
-#spotifyConnectButton:hover {
+button:hover {
     background-color: var(--primary-hover);
     transform: scale(1.02);
 }
 
-#loginButton,
-#registerButton,
 #logoutButton {
     background-color: transparent;
     color: var(--text-muted);
     border: 1px solid var(--input-border);
-    padding: 10px;
-    border-radius: 50px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    width: 100%;
-    transition: all 0.2s;
-}
-
-#loginButton:hover,
-#registerButton:hover,
-#logoutButton:hover {
-    border-color: var(--text-main);
-    color: var(--text-main);
-}
-
-#logoutButton {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     width: auto;
     padding: 8px 16px;
     font-size: 0.8rem;
@@ -132,49 +77,103 @@ input[type="submit"]:hover,
     right: 20px;
 }
 
-#getWrappedButton {
-    font-size: 1.2rem;
-    padding: 15px;
+#logoutButton:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
 }
 
+/* --- Status Messages --- */
+#status-message {
+    margin-top: 20px;
+    font-size: 0.95rem;
+    min-height: 20px;
+}
+.error-text { color: #ff5555; }
+.success-text { color: var(--primary-color); }
+
+/* --- Track List Styling --- */
+.track-list {
+    list-style: none;
+    margin-top: 25px;
+    text-align: left;
+}
+
+.track-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.track-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.rank {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    width: 30px;
+    text-align: center;
+    margin-right: 15px;
+}
+
+.album-art {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+.track-info {
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.track-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none;
+}
+
+.artist-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Footer */
 .app-footer {
     position: fixed;
-    bottom: 20px;
+    bottom: 10px;
     left: 0;
     right: 0;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     pointer-events: none;
 }
 
-.app-footer > * {
-    pointer-events: auto;
-}
-
-.disclaimer {
-    font-size: 0.75rem;
-    color: #535353;
-}
-
-.github-link {
-    display: inline-block;
-    transition: transform 0.2s;
-}
-
-.github-link:hover {
-    transform: scale(1.1);
-}
+.app-footer > * { pointer-events: auto; }
 
 .github-icon {
     width: 24px;
     height: 24px;
     fill: var(--text-muted);
-    transition: fill 0.2s;
 }
-
-.github-link:hover .github-icon {
-    fill: var(--text-main);
-}
+.github-link:hover .github-icon { fill: var(--text-main); }
+.disclaimer { font-size: 0.75rem; color: #535353; }
