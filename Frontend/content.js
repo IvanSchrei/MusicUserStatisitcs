@@ -61,6 +61,7 @@ api.interceptors.response.use(
     }
 );
 
+//Spotify Login
 async function handleSpotifyLogin() {
     try {
         const response = await api.get('/api/spotify/link');
@@ -76,6 +77,7 @@ async function handleSpotifyLogin() {
     }
 }
 
+//Wrapped Data von Backend holen
 async function getWrapped() {
     trackList.innerHTML = "";
     updateStatus("Fetching your top songs...", "neutral");
@@ -96,7 +98,7 @@ async function getWrapped() {
             if (error.response.status === 403) {
                 updateStatus("Please link your Spotify account first (Button 1).", "error");
             } else if (error.response.status === 500) {
-                //Dieser Fehler wird geworfen wenn Benutyer nicht unter allowed Users im Spotify Developer Dashboard ist
+                //Dieser Fehler wird geworfen wenn Benutzer nicht unter allowed Users im Spotify Developer Dashboard ist
                 updateStatus("Error: You are likely not added to the Developer Allowlist.", "error");
             } else {
                 updateStatus(`Error: ${error.response.data.error || "Unknown Error"}`, "error");
@@ -107,6 +109,7 @@ async function getWrapped() {
     }
 }
 
+//Top Songs Anzeigen
 function renderTracks(items) {
     if (!items || items.length === 0) {
         trackList.innerHTML = "<li>No tracks found. Go listen to some music!</li>";
@@ -136,6 +139,7 @@ function renderTracks(items) {
     });
 }
 
+//Status Text setzen
 function updateStatus(message, type) {
     statusDiv.innerText = message;
     statusDiv.className = type === "error" ? "error-text" : (type === "success" ? "success-text" : "");

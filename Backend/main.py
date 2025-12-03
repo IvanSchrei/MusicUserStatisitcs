@@ -24,7 +24,7 @@ SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET")
 
 app = Flask("3Legged_OAuth2_Example")
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "https://remarkable-custard-0d3bbf.netlify.app"}})
 
 #---------------Datenbank Methoden-----------------
 
@@ -193,14 +193,15 @@ def login():
         #User existiert nicht
         return jsonify(error="User with this email doesn't exist, maybe try creating one if you haven't already"), 400
 
-#TODO
 #Enpoint um Spotify Link an Frontend zu senden
 @app.route("/api/spotify/link")
 @token_required
 def get_spotify_link(current_user):
     redirect_uri = "https://remarkable-custard-0d3bbf.netlify.app/content.html"
-    spotify_session = OAuth2Session(SPOTIFY_CLIENT_ID, redirect_uri=redirect_uri, scope=['user-top-read'])
-    authorization_url, state = spotify_session.authorization_url("https://accounts.spotify.com/authorize")
+    spotify_session = OAuth2Session(SPOTIFY_CLIENT_ID,
+                                    redirect_uri=redirect_uri,
+                                    scope=['user-top-read'])
+    authorization_url = spotify_session.authorization_url("https://accounts.spotify.com/authorize")
     return jsonify(url = authorization_url), 200
 
 #Endpoint um code aus dem Frontend, gegen Authtoken von Spotify auszutauschen
