@@ -5,7 +5,7 @@ const statusDiv = document.getElementById("status-message");
 const trackList = document.getElementById("track-list");
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Check if we are returning from Spotify Auth
+    //checken, ob wir von Spotify Auth returnen
     handleSpotifyCallback();
 
     if (spotifyConnectButton) {
@@ -28,15 +28,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Axios setup
+//Axios setup
 const api = axios.create({
-    baseURL: 'https://musicuserstatisitcs.onrender.com', // Your Live Backend
+    baseURL: 'https://musicuserstatisitcs.onrender.com',
     headers: {
         'Content-Type': 'application/json'
     }
 });
 
-// Request Interceptor (Add Token)
+//Token zu request headers hinzufügen
 api.interceptors.request.use(
     (config) => {
         const token = sessionStorage.getItem("jwt_token");
@@ -48,12 +48,11 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response Interceptor (Handle 401 Logout)
+//401 antworten behandeln
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Only logout if it's strictly a token issue, not a Spotify link issue
             if(error.response.data && error.response.data.message === "Token has expired!"){
                 logout();
             }
@@ -61,8 +60,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-// --- MAIN FUNCTIONS ---
 
 async function handleSpotifyLogin() {
     try {
@@ -80,7 +77,7 @@ async function handleSpotifyLogin() {
 }
 
 async function getWrapped() {
-    trackList.innerHTML = ""; // Clear previous results
+    trackList.innerHTML = "";
     updateStatus("Fetching your top songs...", "neutral");
 
     try {
@@ -99,7 +96,7 @@ async function getWrapped() {
             if (error.response.status === 403) {
                 updateStatus("Please link your Spotify account first (Button 1).", "error");
             } else if (error.response.status === 500) {
-                // This is the specific error for users not on the dashboard allowlist
+                //Dieser Fehler wird geworfen wenn Benutyer nicht unter allowed Users im Spotify Developer Dashboard ist
                 updateStatus("Error: You are likely not added to the Developer Allowlist.", "error");
             } else {
                 updateStatus(`Error: ${error.response.data.error || "Unknown Error"}`, "error");
@@ -122,7 +119,7 @@ function renderTracks(items) {
 
         const trackName = track.name;
         const artistName = track.artists.map(a => a.name).join(', ');
-        // Get image (usually index 2 is smallest, 0 is largest. 0 is good for quality)
+        //Bild holen
         const imageUrl = track.album.images[2]?.url || track.album.images[0]?.url || ''; 
         const spotifyUrl = track.external_urls.spotify;
 
@@ -155,7 +152,7 @@ async function handleSpotifyCallback() {
 
     if (auth_code) {
         updateStatus("Linking Spotify...", "neutral");
-        // Remove code from URL immediately for cleaner UI
+        //code von url entfernen, für besseres aussehen
         window.history.replaceState({}, document.title, window.location.pathname);
 
         try {
